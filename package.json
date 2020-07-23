@@ -1,0 +1,6 @@
+{
+  "dependencies": {
+    "alipay-node-sdk": "^1.1.9",
+    "express": "^4.17.1"
+  }
+}
