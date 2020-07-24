@@ -5,23 +5,28 @@ let server = express();
 
 const path = require('path');
 const Alipay = require('alipay-node-sdk');
-
+const cors = require("cors");
 let outTradeId = Date.now().toString();
 
 let ali = new Alipay({
     appId: '2016102400751493',
-    notifyUrl: 'http://www.xxx.com/callback/alipay',
+    notifyUrl: 'http://3e3044v032.qicp.vip/notifyUrl',
     rsaPrivate: path.resolve('./pem/sandbox_private.pem'),
     rsaPublic: path.resolve('./pem/sandbox_ali_public.pem'),
     sandbox: true,
     signType: 'RSA2'
 });
-
+server.use(cors({
+　　methods: ["GET", "POST"],
+　　alloweHeaders: ["Content-Type", "application/json;charset=utf-8;application/x-www-form-urlencoded"]
+}));
 // 静态托管文件
 server.use('/public',express.static(__dirname + '/public'));
 //3.创建一个路由对象
 let router = express.Router();
 //4.设置路由
+
+let OrderID = ''
 router.get('/update',(req,res)=>{
 	let data = req.query
 	let appid = data.appid, versoin = data.version
@@ -44,27 +49,52 @@ router.get('/update',(req,res)=>{
 	}
 	publickey.push('-----END RSA PRIVATE KEY-----');
     res.send(publickey.join(''));
-}).post('/pay',(req,res)=>{
-	var params = ali.wapPay({
-	    subject: '测试商品',
-	    body: '测试商品描述',
+}).post('/pagePay',(req,res)=>{
+	OrderID = outTradeId
+	var params = ali.pagePay({
+	    subject: 'ipad',
+	    body: 'ipad商品描述',
 	    outTradeId: outTradeId,
 	    timeout: '10m',
-	    amount: '10.00',
-	    goodsType: '0'
+	    amount: '10000.00',
+	    goodsType: '0',
+	    qrPayMode: 0
 	});
-	console.log(params);
-	// ali.query({
-	//     outTradeId: outTradeId
-	// }).then(function (ret) {
-	//     console.log("***** ret.body=" + ret.body);
-	    
-	//     //签名校验
-	//     var ok = ali.signVerify(ret.json());
-	// 	console.log(ok)
-	// });
 	var url_API = 'https://openapi.alipaydev.com/gateway.do?'+params;
 	res.send(url_API)
+}).post('/appPay',(req,res)=>{
+	OrderID = outTradeId
+	var params = ali.appPay({
+	    subject: '三星u20',
+	    body: '三星u20商品描述',
+	    outTradeId: outTradeId,
+	    timeout: '10m',
+	    amount: '5000.00',
+	    goodsType: '0'
+	});
+	var url_API = 'https://openapi.alipaydev.com/gateway.do?'+params;
+	res.send(url_API)
+}).post('/wapPay',(req,res)=>{
+	OrderID = outTradeId
+	var params = ali.wapPay({
+	    subject: '苹果11',
+	    body: '苹果11商品描述',
+	    outTradeId: outTradeId,
+	    timeout: '10m',
+	    amount: '8000.00',
+	    goodsType: '0'
+	});
+	var url_API = 'https://openapi.alipaydev.com/gateway.do?'+params;
+	res.send(url_API)
+}).post("/notifyUrl", (req,res) => {
+	ali.query({
+	    outTradeId: OrderID
+	}).then(function (ret) {
+	    console.log("***** ret.body=" + ret.body);
+	    
+	    //签名校验
+	    var ok = ali.signVerify(ret.json());
+	});
 });
 server.use(router);
 
